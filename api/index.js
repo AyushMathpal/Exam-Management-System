@@ -7,6 +7,7 @@ import cors from "cors";
 import bcrypt from "bcryptjs";
 import { Authenticate } from "./middleware/authenticate.js";
 import cookieParser from "cookie-parser";
+
 const app = express();
 dotenv.config();
 app.use(
@@ -28,50 +29,59 @@ const Connection = async () => {
 };
 
 app.post("/login", async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password,role} = req.body;
 
   console.log(req.body);
-
   // try {
   //   const user = await User.findOne({ email });
   //   if (user) return res.status(422).json({ error: "Email Already exists" });
-  //   const userData = new User({ email, password });
+  //   const userData = new User({ email, password,role});
   //   await userData.save();
   // } catch (error) {
   //   console.error("Error during signup:", error);
   // }
-
   try {
     const user = await User.findOne({ email });
-    console.log(user);
+    //  console.log(user);
     if (!user) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
+    if(role!==user.role)return res.status(401).json({ message: "Invalid credentials" });
     const isMatch = await bcrypt.compare(password, user.password);
     const token = await user.generateAuthToken();
     console.log(token);
     //res.cookie("test1","hello")
-    res.cookie("jwtoken", token, {
-      expires: new Date(Date.now() + 250000),
-      httpOnly: true,
-      
-    });
+   
     // Check if the password is correct
     if (!isMatch) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
+    res.cookie("jwtoken", token, {
+      expires: new Date(Date.now() + 250000),
+      httpOnly: true,
+    });
     // If both email and password are correct, send a success response
     return res.status(200).json({ message: "Login successful" });
-  } catch (error) {
+  }
+   catch (error) {
     console.error("Error during login:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 });
-app.get("/protected-route", Authenticate, (req, res) => {
-  // Access user information from req.user
-  //res.cookie("test2","hello")
+app.post("/protected-route", Authenticate, async (req, res) => {
+  
   const user = req.user;
-  res.status(200).json({ message: "This is a protected route", user });
+  const { roles, route } = req.body;
+  const _id = user._id;
+  const userCheck = await User.findOne({ _id });
+  console.log(userCheck.role);
+  if (!roles.includes(userCheck.role)) {
+    res
+      .status(401)
+      .json({ message: "User does not have acces to this resource", user });
+  } else {
+    res.status(200).json({ message: "This is a protected route", user });
+  }
 });
 
 app.listen(3001, (req, res) => {

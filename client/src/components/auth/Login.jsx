@@ -2,24 +2,27 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import './login.css'; // Import the CSS file
 import {Link,useNavigate} from 'react-router-dom';
-
+import LinearProgress from '@mui/material/LinearProgress';
 const Login = () => {
   const navigate=useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
    const [loginSuccess, setLoginSuccess] = useState(false);
-
+  const[loading,setLoading]=useState(false)
   const handleLogin = async (e) => {
+    
     
     const formData={
       email:email,
-      password:password
+      password:password,
+      role:e.target.name,
     }
-    console.log(formData)
+    console.log(formData,e.target.name)
     e.preventDefault();
 
     try {
+      setLoading(true)
       const response = await axios.post('http://localhost:3001/login',formData,
       {
         headers: {
@@ -28,22 +31,22 @@ const Login = () => {
         withCredentials:true,
       }
       );
-
+      setLoading(false)
       if (response.status === 200) {
         setErrorMessage('');
          setLoginSuccess(true);
         console.log('Login successful!');
         navigate("/dashboard")
 
-      } else {
-        setErrorMessage(response.data.message);
       }
     } catch (error) {
+      setLoading(false)
       console.error('Error during login:', error);
+      alert("Invalid Credentials")
     }
   };
 
-  return (
+  return (<>{loading?<LinearProgress style={{backgroundColor:"black"}}/>:null}
     <div className="container">
       <div className="card">
         <h2>Login</h2>
@@ -72,7 +75,7 @@ const Login = () => {
             />
           </div>
           <div className="buttonGroup">
-            <button type="button" onClick={handleLogin} className="loginButton teacher">
+            <button type="button" onClick={handleLogin} className="loginButton teacher" name='teacher'>
               Login as Teacher
             </button>
             {loginSuccess && (
@@ -80,13 +83,14 @@ const Login = () => {
               Go to Dashboard
             </Link>
           )}
-            <button type="button" onClick={handleLogin} className="loginButton admin">
+            <button type="button" onClick={handleLogin} className="loginButton admin" name='admin'>
               Login as Admin
             </button>
           </div>
         </form>
       </div>
     </div>
+    </>
   );
 };
 

@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken"
 const userSchema = new mongoose.Schema({
   email: String,
   password: String,
+  role:String,
 });
 userSchema.pre("save", async function (next) {
   if (this.isModified("password")) {
